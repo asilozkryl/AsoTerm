@@ -8,6 +8,11 @@ ve dosya çalışma alanı. Her blok bir **terminal** (yerel veya **SSH**), **ko
 düzen + ayar kalıcılığı · komut paleti · özelleştirilebilir tema · frameless özel
 pencere çubuğu · NSIS kurulum paketi.
 
+![AsoTerm](docs/screenshot.png)
+
+> **İndir:** [Releases](https://github.com/asilozkryl/AsoTerm/releases) sayfasından
+> `AsoTerm-<sürüm>-setup.exe` (Windows x64).
+
 ## Mimari
 
 Wave ile aynı desen: **Electron kabuk + Go HTTP/WebSocket sidecar sunucusu + React renderer**.
