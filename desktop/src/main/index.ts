@@ -3,6 +3,7 @@ import { join } from 'path';
 import { spawn, ChildProcess } from 'child_process';
 import { createInterface } from 'readline';
 import { readFile, writeFile } from 'fs/promises';
+import { chmodSync } from 'fs';
 
 interface ServerInfo {
   port: number;
@@ -23,6 +24,14 @@ function serverBinaryPath(): string {
 function startServer(): void {
   serverReady = new Promise<ServerInfo>((resolve, reject) => {
     const bin = serverBinaryPath();
+    // macOS/Linux: paketlemeden sonra çalıştırma izni kaybolabilir → garanti et.
+    if (process.platform !== 'win32') {
+      try {
+        chmodSync(bin, 0o755);
+      } catch {
+        /* yoksay */
+      }
+    }
     serverProc = spawn(bin, [], { stdio: ['pipe', 'pipe', 'inherit'], windowsHide: true });
 
     serverProc.on('error', (err) => reject(err));
@@ -43,14 +52,18 @@ function startServer(): void {
 }
 
 function createWindow(): void {
+  const isMac = process.platform === 'darwin';
   const win = new BrowserWindow({
     width: 1400,
     height: 900,
     minWidth: 900,
     minHeight: 600,
     backgroundColor: '#0a0c12',
-    frame: false, // özel (frameless) pencere çubuğu
     title: 'AsoTerm',
+    // macOS: yerel trafik ışıkları (kapat/küçült/büyüt) korunur; Windows: tam frameless.
+    ...(isMac
+      ? { titleBarStyle: 'hiddenInset' as const, trafficLightPosition: { x: 14, y: 16 } }
+      : { frame: false }),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false,

@@ -12,10 +12,11 @@ const out = resolve(here, '..', 'resources', isWin ? 'asoterm-server.exe' : 'aso
 
 mkdirSync(dirname(out), { recursive: true });
 
-// Go PATH'te olmayabilir; Windows'ta varsayılan kurulum yolunu ekle.
+// Go PATH'te yoksa Windows varsayılan kurulum yolunu YEDEK olarak SONA ekle
+// (PATH'te zaten varsa — CI/setup-go — o kullanılır, sürüm çakışması olmaz).
 const env = { ...process.env };
 if (isWin) {
-  env.PATH = `C:\\Program Files\\Go\\bin;${env.PATH}`;
+  env.PATH = `${env.PATH};C:\\Program Files\\Go\\bin`;
 }
 
 // Windows'ta GUI subsystem olarak derle ki Electron sidecar'ı başlatınca

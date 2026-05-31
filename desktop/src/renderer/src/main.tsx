@@ -7,4 +7,9 @@ import '@xterm/xterm/css/xterm.css';
 import './styles.css';
 import App from './App';
 
+// Platforma özgü pencere kabuğu (mac'te yerel trafik ışıkları için boşluk).
+if (window.asoterm?.platform === 'darwin') {
+  document.documentElement.classList.add('is-mac');
+}
+
 createRoot(document.getElementById('root')!).render(<App />);

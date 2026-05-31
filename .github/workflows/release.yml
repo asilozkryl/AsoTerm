@@ -1,0 +1,66 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch: # elle de tetiklenebilir (yalnız derler, release'e yüklemez)
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest # Windows x64 -> NSIS .exe
+          - os: macos-latest # Apple Silicon (arm64) -> .dmg / .zip
+          - os: macos-13 # Intel (x64) -> .dmg / .zip
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        working-directory: desktop
+        run: npm ci
+
+      - name: Build installer
+        working-directory: desktop
+        run: npm run dist
+        env:
+          # İmzasız mac derlemesi: sertifika aramayı kapat
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+
+      - name: Upload artifacts (her durumda)
+        uses: actions/upload-artifact@v4
+        with:
+          name: asoterm-${{ matrix.os }}
+          path: |
+            desktop/dist-installer/*.exe
+            desktop/dist-installer/*.dmg
+            desktop/dist-installer/*.zip
+          if-no-files-found: ignore
+
+      - name: Release'e yükle (yalnız tag push'ta)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            desktop/dist-installer/*.exe
+            desktop/dist-installer/*.dmg
+            desktop/dist-installer/*.zip
+          fail_on_unmatched_files: false

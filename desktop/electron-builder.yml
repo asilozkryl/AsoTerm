@@ -12,19 +12,19 @@ files:
   - out/**/*
   - package.json
 
-# Go sidecar ikilisi app.asar dışına, resources köküne kopyalanır
-# (main process app.isPackaged ise process.resourcesPath altından çalıştırır).
-extraResources:
-  - from: resources/asoterm-server.exe
-    to: asoterm-server.exe
-
 npmRebuild: false
 
+# --- Windows ---
 win:
   target:
     - nsis
   executableName: AsoTerm
   artifactName: ${productName}-${version}-setup.${ext}
+  # Go sidecar ikilisi app.asar dışına, resources köküne kopyalanır
+  # (main: app.isPackaged ise process.resourcesPath/asoterm-server.exe).
+  extraResources:
+    - from: resources/asoterm-server.exe
+      to: asoterm-server.exe
 
 nsis:
   oneClick: false
@@ -34,3 +34,20 @@ nsis:
   createStartMenuShortcut: true
   shortcutName: AsoTerm
   uninstallDisplayName: AsoTerm
+
+# --- macOS ---
+mac:
+  category: public.app-category.developer-tools
+  target:
+    - dmg
+    - zip
+  artifactName: ${productName}-${version}-${arch}.${ext}
+  identity: null # kod imzalama yok (imzasız/ad-hoc derleme)
+  # macOS'ta sidecar AsoTerm.app/Contents/Resources/asoterm-server olur
+  # (main: process.platform !== win32 -> 'asoterm-server', uzantısız).
+  extraResources:
+    - from: resources/asoterm-server
+      to: asoterm-server
+
+dmg:
+  artifactName: ${productName}-${version}-${arch}.${ext}

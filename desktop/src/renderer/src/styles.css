@@ -154,6 +154,14 @@ body {
   -webkit-app-region: no-drag;
 }
 
+/* macOS: yerel trafik ışıkları için solda boşluk; özel pencere düğmelerini gizle */
+.is-mac .topbar {
+  padding-left: 84px;
+}
+.is-mac .win-controls {
+  display: none;
+}
+
 .brand {
   font-family: var(--font-mono);
   font-size: 15px;

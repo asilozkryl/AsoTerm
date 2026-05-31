@@ -1,6 +1,6 @@
 {
   "name": "asoterm",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "AsoTerm — Wave tarzı blok tabanlı terminal ve dosya çalışma alanı",
   "main": "./out/main/index.js",
   "author": "asilozkryl",
@@ -9,7 +9,7 @@
     "dev": "npm run build:server && electron-vite dev",
     "build": "npm run build:server && electron-vite build",
     "start": "electron-vite preview",
-    "dist": "npm run build && electron-builder --win"
+    "dist": "npm run build && electron-builder"
   },
   "dependencies": {
     "@fontsource-variable/jetbrains-mono": "^5.2.8",

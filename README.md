@@ -10,8 +10,13 @@ pencere çubuğu · NSIS kurulum paketi.
 
 ![AsoTerm](docs/screenshot.png)
 
-> **İndir:** [Releases](https://github.com/asilozkryl/AsoTerm/releases) sayfasından
-> `AsoTerm-<sürüm>-setup.exe` (Windows x64).
+> **İndir:** [Releases](https://github.com/asilozkryl/AsoTerm/releases) sayfasından —
+> **Windows** (`AsoTerm-<sürüm>-setup.exe`) · **macOS** Apple Silicon & Intel
+> (`AsoTerm-<sürüm>-<arch>.dmg`). Sürümler GitHub Actions ile her platformda
+> otomatik derlenir.
+
+> macOS notu: imzasız derleme olduğu için ilk açılışta Gatekeeper uyarısı çıkabilir →
+> uygulamaya **sağ tık → Aç**, ya da `xattr -cr /Applications/AsoTerm.app`.
 
 ## Mimari
 
