@@ -1,0 +1,44 @@
+{
+  "name": "asoterm",
+  "version": "2.0.0",
+  "description": "AsoTerm — Wave tarzı blok tabanlı terminal ve dosya çalışma alanı",
+  "main": "./out/main/index.js",
+  "author": "asilozkryl",
+  "scripts": {
+    "build:server": "node scripts/build-server.mjs",
+    "dev": "npm run build:server && electron-vite dev",
+    "build": "npm run build:server && electron-vite build",
+    "start": "electron-vite preview",
+    "dist": "npm run build && electron-builder --win"
+  },
+  "dependencies": {
+    "@fontsource-variable/jetbrains-mono": "^5.2.8",
+    "@fontsource-variable/manrope": "^5.2.8",
+    "@monaco-editor/react": "^4.6.0",
+    "@xterm/addon-fit": "^0.10.0",
+    "@xterm/xterm": "^5.5.0",
+    "monaco-editor": "^0.52.2",
+    "papaparse": "^5.4.1",
+    "rdndmb-html5-to-touch": "^8.1.2",
+    "react": "^18.3.1",
+    "react-dnd": "^16.0.1",
+    "react-dnd-html5-backend": "^16.0.1",
+    "react-dnd-multi-backend": "^8.1.2",
+    "react-dom": "^18.3.1",
+    "react-markdown": "^9.0.1",
+    "react-mosaic-component": "^6.1.1",
+    "remark-gfm": "^4.0.0",
+    "zustand": "^5.0.2"
+  },
+  "devDependencies": {
+    "@types/papaparse": "^5.3.15",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "electron": "^33.2.1",
+    "electron-builder": "^26.8.1",
+    "electron-vite": "^2.3.0",
+    "typescript": "^5.7.2",
+    "vite": "^5.4.11"
+  }
+}

@@ -1,0 +1,31 @@
+# --- Derlenmiş ikililer / paketler ---
+*.exe
+*.dll
+*.so
+*.dylib
+desktop/resources/asoterm-server*
+
+# --- Node / Electron (desktop) ---
+node_modules/
+desktop/out/
+desktop/dist/
+desktop/dist-installer/
+.npm/
+
+# --- Go ---
+*.test
+*.prof
+vendor/
+
+# --- Editör / OS / araçlar ---
+.claude/
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+*.log
+
+# --- Yerel ortam ---
+.env
+.env.*

@@ -1,0 +1,36 @@
+appId: com.asilozkryl.asoterm
+productName: AsoTerm
+copyright: © 2026 asilozkryl
+
+directories:
+  output: dist-installer
+  buildResources: build
+
+# Yalın paket: renderer Vite ile, main/preload esbuild ile out/ içine bundle edilir;
+# çalışma anında node_modules gerekmez (main yalnız electron + node builtin kullanır).
+files:
+  - out/**/*
+  - package.json
+
+# Go sidecar ikilisi app.asar dışına, resources köküne kopyalanır
+# (main process app.isPackaged ise process.resourcesPath altından çalıştırır).
+extraResources:
+  - from: resources/asoterm-server.exe
+    to: asoterm-server.exe
+
+npmRebuild: false
+
+win:
+  target:
+    - nsis
+  executableName: AsoTerm
+  artifactName: ${productName}-${version}-setup.${ext}
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: always
+  createStartMenuShortcut: true
+  shortcutName: AsoTerm
+  uninstallDisplayName: AsoTerm
