@@ -6,7 +6,9 @@ export function basename(path: string): string {
 // Bir yolun üst dizinini döndürür (yerel basit hesap; ayraç \ veya /).
 export function dirOf(path: string): string {
   const idx = Math.max(path.lastIndexOf('\\'), path.lastIndexOf('/'));
-  return idx > 0 ? path.slice(0, idx) : path;
+  if (idx < 0) return path;
+  if (idx === 0) return path.slice(0, 1); // kök öğe: '/foo' -> '/'
+  return path.slice(0, idx);
 }
 
 export function extOf(path: string): string {

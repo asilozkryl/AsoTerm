@@ -34,6 +34,8 @@ class TermSocket {
   private exitListeners = new Map<string, ExitListener>();
   private pending = new Map<string, { resolve: (id: string) => void; reject: (e: Error) => void }>();
   private reqCounter = 0;
+  private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  private reconnectDelay = 1000;
 
   private ensure(): void {
     if (this.ws) return;
@@ -41,15 +43,42 @@ class TermSocket {
     const ws = new WebSocket(`${wsBase}/ws?token=${token}`);
     this.ws = ws;
     ws.onopen = () => {
+      this.reconnectDelay = 1000; // başarılı bağlantı → backoff sıfırla
       for (const msg of this.queue) ws.send(JSON.stringify(msg));
       this.queue = [];
     };
     ws.onmessage = (ev) => this.onMessage(JSON.parse(ev.data as string) as WsMsg);
-    ws.onclose = () => {
-      this.ws = null;
-      // Açık oturumları sonlandırılmış say.
-      for (const [, cb] of this.exitListeners) cb();
+    ws.onerror = () => {
+      try {
+        ws.close();
+      } catch {
+        /* yoksay */
+      }
     };
+    ws.onclose = () => {
+      if (this.ws === ws) this.ws = null;
+      // Gönderilemeyen mesajları at: yeniden bağlanınca create reqId'leri
+      // tekrar gönderilip sahipsiz oturum yaratmasın.
+      this.queue = [];
+      // Yanıtlanamayan create istekleri başarısız say (boş pane'de takılmasın).
+      for (const [, p] of this.pending) p.reject(new Error('terminal bağlantısı kapandı'));
+      this.pending.clear();
+      // PTY oturumları sunucuda yaşamaya devam eder → soketi yeniden kur,
+      // oturumlar sürsün. (Kopuş, oturum bitişi DEĞİL → exit tetikleme.)
+      this.scheduleReconnect();
+    };
+  }
+
+  // Aktif oturum varken kopan soketi artan beklemeyle (1→8 sn) yeniden kurar.
+  private scheduleReconnect(): void {
+    if (this.reconnectTimer != null) return;
+    // Sürdürülecek bir şey yoksa tembel davran: sonraki send() zaten bağlanır.
+    if (this.dataListeners.size === 0) return;
+    this.reconnectTimer = setTimeout(() => {
+      this.reconnectTimer = null;
+      this.ensure();
+    }, this.reconnectDelay);
+    this.reconnectDelay = Math.min(this.reconnectDelay * 2, 8000);
   }
 
   private send(msg: WsMsg): void {

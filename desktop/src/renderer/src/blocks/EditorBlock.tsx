@@ -7,7 +7,9 @@ import { toast } from '../dialogs';
 export default function EditorBlock({ path }: { path: string }) {
   const [value, setValue] = useState('');
   const [status, setStatus] = useState('yükleniyor…');
+  const [dirty, setDirty] = useState(false);
   const valueRef = useRef('');
+  const savedRef = useRef(''); // son kaydedilen/yüklenen içerik (dirty karşılaştırması)
 
   useEffect(() => {
     let active = true;
@@ -16,6 +18,8 @@ export default function EditorBlock({ path }: { path: string }) {
         if (!active) return;
         setValue(c.content);
         valueRef.current = c.content;
+        savedRef.current = c.content;
+        setDirty(false);
         setStatus(c.truncated ? 'büyük dosya — kesildi' : 'hazır');
       })
       .catch((e) => setStatus('hata: ' + e));
@@ -27,6 +31,8 @@ export default function EditorBlock({ path }: { path: string }) {
   const save = async () => {
     try {
       await fs.write(path, valueRef.current);
+      savedRef.current = valueRef.current;
+      setDirty(false);
       setStatus('kaydedildi ✓');
       toast('Kaydedildi: ' + path);
     } catch (e) {
@@ -45,6 +51,11 @@ export default function EditorBlock({ path }: { path: string }) {
         <span className="editor-path" title={path}>
           {path}
         </span>
+        {dirty && (
+          <span className="editor-dirty" title="Kaydedilmemiş değişiklikler">
+            ● değiştirildi
+          </span>
+        )}
         <span className="editor-status">{status}</span>
         <button className="mini-btn" onClick={save}>
           Kaydet (Ctrl+S)
@@ -57,6 +68,7 @@ export default function EditorBlock({ path }: { path: string }) {
           value={value}
           onChange={(v) => {
             valueRef.current = v ?? '';
+            setDirty(valueRef.current !== savedRef.current);
           }}
           onMount={onMount}
           options={{ fontSize: 13, minimap: { enabled: true }, automaticLayout: true }}

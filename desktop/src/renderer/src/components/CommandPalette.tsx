@@ -23,6 +23,7 @@ export default function CommandPalette({
   const [q, setQ] = useState('');
   const [idx, setIdx] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
 
   const commands: Cmd[] = useMemo(
     () => [
@@ -51,7 +52,12 @@ export default function CommandPalette({
         label: 'Aktif bloğu kapat',
         run: () => store.focusedBlockId && store.closeBlock(store.focusedBlockId),
       },
-      { id: 'closetab', label: 'Sekmeyi kapat', run: () => store.closeTab(store.activeTabId) },
+      {
+        id: 'closetab',
+        label: 'Sekmeyi kapat',
+        hint: 'Ctrl+Shift+W',
+        run: () => store.closeTab(store.activeTabId),
+      },
     ],
     [store, webHome, onOpenSettings, onOpenSSH],
   );
@@ -67,6 +73,10 @@ export default function CommandPalette({
   useEffect(() => {
     setIdx(0);
   }, [q]);
+  // Seçili öğeyi görünür alana kaydır (ok tuşlarıyla gezinince kaybolmasın).
+  useEffect(() => {
+    listRef.current?.querySelector('.palette-item.active')?.scrollIntoView({ block: 'nearest' });
+  }, [idx]);
 
   const run = (c?: Cmd) => {
     c?.run();
@@ -102,7 +112,7 @@ export default function CommandPalette({
             }
           }}
         />
-        <div className="palette-list">
+        <div className="palette-list" ref={listRef}>
           {filtered.map((c, i) => (
             <div
               key={c.id}
