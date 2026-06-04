@@ -3,6 +3,7 @@ import { initApi } from './api/config';
 import { fs } from './api/rest';
 import { useStore, serializeState, PersistedState } from './store';
 import { useSettings } from './settings';
+import { initAutoUpdate } from './update';
 import TopBar from './components/TopBar';
 import Workspace from './tiling/Workspace';
 import StatusBar from './components/StatusBar';
@@ -34,6 +35,9 @@ export default function App() {
       }
     })();
   }, []);
+
+  // Otomatik güncelleme: açılışta denetle, yeni sürüm bulununca kullanıcıya sor.
+  useEffect(() => initAutoUpdate(), []);
 
   // Düzen değiştikçe diske kaydet (debounce).
   useEffect(() => {

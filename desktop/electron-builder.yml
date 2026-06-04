@@ -2,6 +2,15 @@ appId: com.asilozkryl.asoterm
 productName: AsoTerm
 copyright: © 2026 asilozkryl
 
+# Otomatik güncelleme sağlayıcısı: GitHub Releases.
+# Bu yapılandırma sayesinde build, electron-updater'ın okuduğu güncelleme
+# meta dosyalarını (latest.yml / latest-mac.yml + *.blockmap) üretir ve
+# uygulamaya app-update.yml gömülür.
+publish:
+  provider: github
+  owner: asilozkryl
+  repo: AsoTerm
+
 directories:
   output: dist-installer
   buildResources: build

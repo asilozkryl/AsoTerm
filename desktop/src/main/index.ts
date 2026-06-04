@@ -4,6 +4,7 @@ import { spawn, ChildProcess } from 'child_process';
 import { createInterface } from 'readline';
 import { readFile, writeFile } from 'fs/promises';
 import { chmodSync } from 'fs';
+import { autoUpdater } from 'electron-updater';
 
 interface ServerInfo {
   port: number;
@@ -142,9 +143,56 @@ ipcMain.handle('win:maximize-toggle', () => {
 ipcMain.handle('win:close', () => mainWindow?.close());
 ipcMain.handle('win:is-maximized', () => mainWindow?.isMaximized() ?? false);
 
+// --- Otomatik güncelleme (electron-updater + GitHub Releases) ---
+// "Önce sor" akışı: indirme ve kurulum yalnız kullanıcı onayıyla yapılır.
+// electron-updater olayları renderer'a 'update:event' kanalıyla iletilir.
+function setupAutoUpdater(): void {
+  autoUpdater.autoDownload = false; // önce sor: kendiliğinden indirme
+  autoUpdater.autoInstallOnAppQuit = true; // indirildiyse çıkışta uygula
+  const send = (payload: Record<string, unknown>): void => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('update:event', payload);
+    }
+  };
+  autoUpdater.on('update-available', (info) => send({ kind: 'available', version: info.version }));
+  autoUpdater.on('update-not-available', () => send({ kind: 'none' }));
+  autoUpdater.on('download-progress', (p) =>
+    send({ kind: 'progress', percent: Math.round(p.percent) }),
+  );
+  autoUpdater.on('update-downloaded', (info) => send({ kind: 'downloaded', version: info.version }));
+  autoUpdater.on('error', (err) =>
+    send({ kind: 'error', message: err == null ? 'bilinmeyen hata' : err.message || String(err) }),
+  );
+}
+
+ipcMain.handle('app:version', () => app.getVersion());
+
+ipcMain.handle('update:check', async (): Promise<{ ok: boolean; reason?: string }> => {
+  // Güncelleme yalnız paketlenmiş derlemede çalışır (dev'de app-update.yml yok).
+  if (!app.isPackaged) return { ok: false, reason: 'dev' };
+  try {
+    await autoUpdater.checkForUpdates();
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, reason: String(e) };
+  }
+});
+
+ipcMain.handle('update:download', async (): Promise<{ ok: boolean; reason?: string }> => {
+  try {
+    await autoUpdater.downloadUpdate();
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, reason: String(e) };
+  }
+});
+
+ipcMain.handle('update:install', (): void => autoUpdater.quitAndInstall());
+
 app.whenReady().then(() => {
   startServer();
   createWindow();
+  setupAutoUpdater();
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });

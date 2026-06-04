@@ -4,7 +4,9 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   main: {
-    plugins: [externalizeDepsPlugin()],
+    // electron-updater paketlenmiş uygulamada gerekli; proje node_modules
+    // göndermediği için externalize ETME → main bundle'ına dahil edilsin.
+    plugins: [externalizeDepsPlugin({ exclude: ['electron-updater'] })],
   },
   preload: {
     plugins: [externalizeDepsPlugin()],
