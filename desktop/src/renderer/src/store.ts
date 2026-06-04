@@ -236,12 +236,14 @@ export const useStore = create<Store>((set, get) => ({
     const remaining = tabs.filter((t) => t.id !== tabId);
     if (remaining.length === 0) {
       const fresh = makeTab(get().home);
-      set({ tabs: [fresh], activeTabId: fresh.id });
+      set({ tabs: [fresh], activeTabId: fresh.id, maximized: null });
       return;
     }
     set((s) => ({
       tabs: remaining,
       activeTabId: s.activeTabId === tabId ? remaining[remaining.length - 1].id : s.activeTabId,
+      // Büyütülmüş sekme kapatıldıysa kalıntı büyütme durumunu temizle.
+      maximized: s.maximized && s.maximized.tabId === tabId ? null : s.maximized,
     }));
   },
 
@@ -300,8 +302,9 @@ export const useStore = create<Store>((set, get) => ({
   // Bir bloğun başlığını ve/veya prop'larını günceller (ör. web bloğu gezinince).
   patchBlock: (blockId, patch) => {
     set((s) => ({
+      // Bloğu içeren sekmeyi güncelle (aktif olmasa da) — arka plan sekmesindeki
+      // web bloğunun gezinme/başlık güncellemeleri yok sayılmasın.
       tabs: s.tabs.map((t) => {
-        if (t.id !== s.activeTabId) return t;
         const b = t.blocks[blockId];
         if (!b) return t;
         return {

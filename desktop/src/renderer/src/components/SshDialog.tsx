@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useStore } from '../store';
 import { useSettings, SSHProfile } from '../settings';
 import { SSHOpts } from '../api/term';
@@ -18,6 +18,15 @@ export default function SshDialog({ onClose }: { onClose: () => void }) {
   const [passphrase, setPassphrase] = useState('');
   const [save, setSave] = useState(false);
   const [profileName, setProfileName] = useState('');
+
+  // Esc ile kapat (diğer tüm overlay'lerle tutarlı).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
 
   const loadProfile = (p: SSHProfile) => {
     setHost(p.host);
@@ -110,7 +119,7 @@ export default function SshDialog({ onClose }: { onClose: () => void }) {
           <div className="ssh-form">
             <div className="ssh-row">
               <label>Host</label>
-              <input className="settings-input ssh-grow" value={host} onChange={(e) => setHost(e.target.value)} placeholder="örn. 192.168.1.10 / sunucu.com" spellCheck={false} />
+              <input className="settings-input ssh-grow" value={host} onChange={(e) => setHost(e.target.value)} placeholder="örn. 192.168.1.10 / sunucu.com" spellCheck={false} autoFocus />
             </div>
             <div className="ssh-row">
               <label>Port</label>

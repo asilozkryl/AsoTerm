@@ -63,6 +63,27 @@ export default function App() {
         setSettingsOpen((o) => !o);
         return;
       }
+      // Ctrl+Tab / Ctrl+Shift+Tab — sekmeler arası geçiş
+      if (e.ctrlKey && e.key === 'Tab') {
+        e.preventDefault();
+        const { tabs, activeTabId, setActiveTab } = useStore.getState();
+        if (tabs.length > 1) {
+          const i = tabs.findIndex((t) => t.id === activeTabId);
+          const n = e.shiftKey ? (i - 1 + tabs.length) % tabs.length : (i + 1) % tabs.length;
+          setActiveTab(tabs[n].id);
+        }
+        return;
+      }
+      // Ctrl+1..9 — sekmeye atla (9 = son sekme)
+      if (e.ctrlKey && !e.shiftKey && !e.altKey && e.key >= '1' && e.key <= '9') {
+        const { tabs, setActiveTab } = useStore.getState();
+        const n = e.key === '9' ? tabs.length - 1 : Number(e.key) - 1;
+        if (n >= 0 && n < tabs.length) {
+          e.preventDefault();
+          setActiveTab(tabs[n].id);
+        }
+        return;
+      }
       if (!(e.ctrlKey && e.shiftKey)) return;
       const k = e.key.toLowerCase();
       if (k === 'p') {
@@ -77,6 +98,11 @@ export default function App() {
       } else if (k === 'n') {
         e.preventDefault();
         addTab();
+      } else if (k === 'w') {
+        // Ctrl+Shift+W — aktif sekmeyi kapat (terminal Ctrl+W ile çakışmasın diye Shift'li)
+        e.preventDefault();
+        const { activeTabId, closeTab } = useStore.getState();
+        closeTab(activeTabId);
       }
     };
     window.addEventListener('keydown', onKey);

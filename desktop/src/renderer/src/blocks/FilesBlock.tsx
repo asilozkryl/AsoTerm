@@ -30,7 +30,9 @@ export default function FilesBlock({ path }: { path: string }) {
   const [showHidden, setShowHidden] = useState(false);
   const [sortKey, setSortKey] = useState<SortKey>('name');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
+  const [loading, setLoading] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
+  const reqRef = useRef(0); // gezinme istek sırası (geç gelen eski yanıtları ele)
 
   const openFile = useStore((s) => s.openFile);
   const addBlock = useStore((s) => s.addBlock);
@@ -38,13 +40,18 @@ export default function FilesBlock({ path }: { path: string }) {
   const setClipboard = useStore((s) => s.setClipboard);
 
   const load = async (target: string) => {
+    const myReq = ++reqRef.current;
+    setLoading(true);
     try {
       const list = await fs.list(target);
+      if (myReq !== reqRef.current) return; // daha yeni bir gezinme oldu → bu sonucu yok say
       setCwd(target);
       setEntries(list);
       setSelected(null);
     } catch (e) {
-      toast('Dizin açılamadı: ' + e, true);
+      if (myReq === reqRef.current) toast('Dizin açılamadı: ' + e, true);
+    } finally {
+      if (myReq === reqRef.current) setLoading(false);
     }
   };
 
@@ -297,7 +304,12 @@ export default function FilesBlock({ path }: { path: string }) {
           <div
             key={e.path}
             data-path={e.path}
-            className={'files-row' + (e.isDir ? ' dir' : '') + (e.path === selected ? ' selected' : '')}
+            className={
+              'files-row' +
+              (e.isDir ? ' dir' : '') +
+              (e.path === selected ? ' selected' : '') +
+              (clipboard?.op === 'cut' && clipboard.path === e.path ? ' cut' : '')
+            }
             draggable
             onDragStart={(ev) => {
               ev.dataTransfer.setData(DRAG_MIME, e.path);
@@ -313,7 +325,11 @@ export default function FilesBlock({ path }: { path: string }) {
             <span className="files-date">{formatDate(e.modUnix)}</span>
           </div>
         ))}
-        {displayed.length === 0 && <div className="files-empty">(boş klasör)</div>}
+        {loading ? (
+          <div className="files-loading">yükleniyor…</div>
+        ) : (
+          displayed.length === 0 && <div className="files-empty">(boş klasör)</div>
+        )}
       </div>
 
       {menu && <ContextMenu x={menu.x} y={menu.y} items={menuItems()} onClose={() => setMenu(null)} />}

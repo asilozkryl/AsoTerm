@@ -18,6 +18,15 @@ export default function Settings({ onClose }: { onClose: () => void }) {
       .catch(() => {});
   }, []);
 
+  // Esc ile kapat (diğer tüm overlay'lerle tutarlı).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
   return (
     <div
       className="modal-overlay"

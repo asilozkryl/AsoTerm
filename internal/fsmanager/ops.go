@@ -16,8 +16,10 @@ func (m *Manager) Copy(src, dstDir string) error {
 		return fmt.Errorf("kaynak bulunamadı: %w", err)
 	}
 	dst := filepath.Join(dstDir, filepath.Base(src))
-	if err := ensureDifferent(src, dst); err != nil {
-		return err
+	// Hedef kaynağın kendisiyse (aynı klasöre kopyala→yapıştır) çakışmayan bir
+	// ad üret; üzerine yazmak yerine bir kopya (çoğalt) oluşturulsun.
+	if filepath.Clean(dst) == filepath.Clean(src) {
+		dst = uniqueName(dstDir, filepath.Base(src))
 	}
 	if info.IsDir() {
 		if isSubPath(src, dstDir) {
@@ -109,6 +111,23 @@ func ensureDifferent(src, dst string) error {
 		return fmt.Errorf("kaynak ve hedef aynı")
 	}
 	return nil
+}
+
+// uniqueName, dir içinde base ile çakışmayan bir ad üretir ("ad kopya.ext",
+// "ad kopya 2.ext", …) — aynı klasöre kopyalarken çoğaltma için.
+func uniqueName(dir, base string) string {
+	ext := filepath.Ext(base)
+	stem := strings.TrimSuffix(base, ext)
+	for i := 1; ; i++ {
+		name := stem + " kopya" + ext
+		if i > 1 {
+			name = fmt.Sprintf("%s kopya %d%s", stem, i, ext)
+		}
+		candidate := filepath.Join(dir, name)
+		if _, err := os.Stat(candidate); err != nil {
+			return candidate
+		}
+	}
 }
 
 // isSubPath, dir'in base'in altında (veya base'in kendisi) olup olmadığını döndürür.
