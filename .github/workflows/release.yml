@@ -2,16 +2,69 @@ name: Release
 
 on:
   push:
+    # 1) Elle tag push: v* → o tag için release
     tags:
       - 'v*'
-  workflow_dispatch: # elle de tetiklenebilir (yalnız derler, release'e yüklemez)
+    # 2) Otomatik: main'e push → desktop/package.json sürümü için tag yoksa release
+    branches:
+      - main
+  workflow_dispatch: # main'deki mevcut sürüm için (yoksa) release çıkarır
 
 permissions:
   contents: write
 
 jobs:
+  # Sürümü belirle ve gerekiyorsa release/tag'i (matris yarışını önlemek için
+  # tek seferde) oluştur. main'e her push bu job'ı çalıştırır ama yalnız sürüm
+  # numarası için tag YOKSA gerçekten release açılır.
+  prepare:
+    name: Sürüm/Release hazırla
+    runs-on: ubuntu-latest
+    outputs:
+      release: ${{ steps.decide.outputs.release }}
+      tag: ${{ steps.decide.outputs.tag }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Sürümü ve release gerekliliğini belirle
+        id: decide
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            # Elle tag push: her zaman release
+            tag="${GITHUB_REF_NAME}"
+            echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+            echo "release=true" >> "$GITHUB_OUTPUT"
+            echo "Tag push algılandı: ${tag} -> release"
+          else
+            # main push / dispatch: package.json sürümüne bak
+            ver="$(node -p "require('./desktop/package.json').version")"
+            tag="v${ver}"
+            echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+            if git ls-remote --exit-code --tags origin "refs/tags/${tag}" >/dev/null 2>&1; then
+              echo "release=false" >> "$GITHUB_OUTPUT"
+              echo "${tag} zaten yayınlanmış -> release atlanıyor (sürümü artırınca tetiklenir)"
+            else
+              echo "release=true" >> "$GITHUB_OUTPUT"
+              echo "Yeni sürüm ${tag} -> release oluşturulacak"
+            fi
+          fi
+
+      - name: Release + tag oluştur (yoksa)
+        if: steps.decide.outputs.release == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          # main push'ta tag mevcut commit'te (main HEAD) oluşturulur; tag
+          # push'ta var olan tag/release bulunur. Asset'leri build job ekler.
+          tag_name: ${{ steps.decide.outputs.tag }}
+          name: AsoTerm ${{ steps.decide.outputs.tag }}
+
   build:
     name: Build (${{ matrix.os }})
+    needs: prepare
+    if: needs.prepare.outputs.release == 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -57,12 +110,13 @@ jobs:
             desktop/dist-installer/*.zip
           if-no-files-found: ignore
 
-      - name: Release'e yükle (yalnız tag push'ta)
-        if: startsWith(github.ref, 'refs/tags/')
+      - name: Release'e yükle
         uses: softprops/action-gh-release@v2
         with:
+          # prepare'in açtığı release'e (tag ile) asset ekle.
           # latest.yml + *.blockmap: electron-updater'ın (Windows) otomatik
           # güncelleme için Release'ten okuduğu meta dosyaları.
+          tag_name: ${{ needs.prepare.outputs.tag }}
           files: |
             desktop/dist-installer/*.exe
             desktop/dist-installer/*.dmg
