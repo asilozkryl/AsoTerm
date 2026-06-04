@@ -29,6 +29,7 @@ function TabPane({
           className="asoterm-mosaic"
           value={tab.layout}
           onChange={(node) => setLayout(tab.id, node)}
+          resize={{ minimumPaneSizePercentage: 10 }}
           renderTile={(id, path) => {
             const block = tab.blocks[id];
             return (
