@@ -37,6 +37,8 @@ interface Store {
   home: string;
   focusedBlockId: string | null;
   clipboard: Clipboard | null;
+  // Büyütülmüş (tam genişletilmiş) blok — geri yükleme için önceki düzen saklanır.
+  maximized: { tabId: string; blockId: string; prevLayout: MosaicNode<string> | null } | null;
 
   init: (home: string) => void;
   restore: (home: string, data: PersistedState | null) => void;
@@ -49,6 +51,7 @@ interface Store {
   createBlock: (type: BlockType, props?: Record<string, unknown>, title?: string) => string;
   patchBlock: (blockId: string, patch: { title?: string; props?: Record<string, unknown> }) => void;
   closeBlock: (blockId: string) => void;
+  toggleMaximize: (blockId: string) => void;
   openFile: (path: string) => void;
   openDir: (path: string) => void;
   setFocusedBlock: (blockId: string | null) => void;
@@ -93,6 +96,27 @@ function pruneLeaf(
   return { ...node, first, second };
 }
 
+// Bir yaprağın mosaic ağacında bulunup bulunmadığını döndürür.
+function containsLeaf(node: MosaicNode<string> | null, leafId: string): boolean {
+  if (node == null) return false;
+  if (typeof node === 'string') return node === leafId;
+  return containsLeaf(node.first, leafId) || containsLeaf(node.second, leafId);
+}
+
+// Hedef yaprağı içeren her dalı %100'e çekerek o bloğu büyütür. Ağacın yapısı
+// (ve dolayısıyla blokların React kimliği) korunur — yalnız splitPercentage değişir,
+// böylece terminal/webview yeniden başlatılmaz.
+function maximizeLeaf(node: MosaicNode<string>, leafId: string): MosaicNode<string> {
+  if (typeof node === 'string') return node;
+  if (containsLeaf(node.first, leafId)) {
+    return { ...node, splitPercentage: 100, first: maximizeLeaf(node.first, leafId) };
+  }
+  if (containsLeaf(node.second, leafId)) {
+    return { ...node, splitPercentage: 0, second: maximizeLeaf(node.second, leafId) };
+  }
+  return node;
+}
+
 function makeTab(home: string): Tab {
   // Varsayılan çalışma alanı: solda dosya gezgini, sağda terminal (döşeme).
   const filesBlock: Block = {
@@ -116,13 +140,19 @@ function makeTab(home: string): Tab {
 }
 
 // Diske yazılacak güvenli kopya: terminal bloklarından geçici sessionId çıkarılır.
-export function serializeState(s: { activeTabId: string; tabs: Tab[] }): PersistedState {
+export function serializeState(s: {
+  activeTabId: string;
+  tabs: Tab[];
+  maximized?: { tabId: string; prevLayout: MosaicNode<string> | null } | null;
+}): PersistedState {
   return {
     activeTabId: s.activeTabId,
     tabs: s.tabs.map((t) => ({
       id: t.id,
       title: t.title,
-      layout: t.layout,
+      // Büyütülmüş sekmenin gerçek (büyütülmemiş) düzenini kaydet → yeniden
+      // başlatınca büyütülmüş halde sıkışıp kalmaz.
+      layout: s.maximized && s.maximized.tabId === t.id ? s.maximized.prevLayout : t.layout,
       blocks: Object.fromEntries(
         Object.entries(t.blocks).map(([id, b]) => [
           id,
@@ -172,6 +202,7 @@ export const useStore = create<Store>((set, get) => ({
   home: '',
   focusedBlockId: null,
   clipboard: null,
+  maximized: null,
 
   init: (home) => {
     const tab = makeTab(home);
@@ -223,6 +254,9 @@ export const useStore = create<Store>((set, get) => ({
 
   setLayout: (tabId, layout) => {
     set((s) => ({
+      // Kullanıcı bu sekmenin düzenini elle değiştirdiyse (resize/taşıma/böl/kapat)
+      // büyütme kipinden çık — eski düzeni geri yükleme niyeti kalmaz.
+      maximized: s.maximized && s.maximized.tabId === tabId ? null : s.maximized,
       tabs: s.tabs.map((t) => {
         if (t.id !== tabId) return t;
         const keep = new Set(layout ? getLeaves(layout) : []);
@@ -291,6 +325,46 @@ export const useStore = create<Store>((set, get) => ({
     if (!tab) return;
     const newLayout = pruneLeaf(tab.layout, blockId);
     get().setLayout(activeTabId, newLayout);
+  },
+
+  // Bloğu büyüt / eski boyutuna döndür (aç-kapa). Büyütme, mosaic ağacının
+  // yapısını bozmadan yalnız splitPercentage'ları değiştirerek yapılır; geri
+  // yükleme için büyütmeden önceki düzen saklanır.
+  toggleMaximize: (blockId) => {
+    const { tabs, activeTabId, maximized } = get();
+    const tab = tabs.find((t) => t.id === activeTabId);
+    if (!tab || !tab.layout) return;
+
+    // Aynı bloğa tekrar tıklanırsa eski düzeni geri yükle.
+    if (maximized && maximized.blockId === blockId) {
+      set((s) => ({
+        maximized: null,
+        tabs: s.tabs.map((t) =>
+          t.id === maximized.tabId ? { ...t, layout: maximized.prevLayout } : t,
+        ),
+      }));
+      return;
+    }
+
+    // Büyütmeyi her zaman büyütülmemiş "temel" düzen üzerinden hesapla (aynı
+    // sekmede başka bir blok zaten büyütülmüşse onun önceki düzenini kullan).
+    const baseLayout =
+      maximized && maximized.tabId === activeTabId ? maximized.prevLayout : tab.layout;
+    // Tek döşeme varsa veya blok bu düzende yoksa büyütülecek bir şey yok.
+    if (!baseLayout || typeof baseLayout === 'string' || !containsLeaf(baseLayout, blockId)) return;
+
+    const maxed = maximizeLeaf(baseLayout, blockId);
+    set((s) => ({
+      focusedBlockId: blockId,
+      maximized: { tabId: activeTabId, blockId, prevLayout: baseLayout },
+      tabs: s.tabs.map((t) => {
+        // Farklı bir sekmede büyütme kalmışsa orayı eski haline döndür.
+        if (maximized && maximized.tabId !== activeTabId && t.id === maximized.tabId) {
+          return { ...t, layout: maximized.prevLayout };
+        }
+        return t.id === activeTabId ? { ...t, layout: maxed } : t;
+      }),
+    }));
   },
 
   openFile: (path) => {

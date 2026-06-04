@@ -388,6 +388,12 @@ body {
   letter-spacing: 0.2px;
   display: flex;
   align-items: center;
+  /* Başlık, başlık çubuğunun boş alanını da kaplasın → bloğu taşımak için
+     yalnız başlık metni değil, neredeyse tüm çubuk sürüklenebilir olur. */
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
 }
 .mosaic-window-title::before {
   content: '';
@@ -427,6 +433,10 @@ body {
   background: rgba(255, 255, 255, 0.1);
   color: var(--text);
 }
+.tile-btn.active {
+  background: color-mix(in srgb, var(--accent) 24%, transparent);
+  color: var(--text);
+}
 .tile-close:hover {
   background: var(--danger);
   color: #fff;
@@ -437,16 +447,22 @@ body {
   inset: 0;
 }
 
-/* sürükle-bölme bırakma bölgeleri (koyu temada görünür) */
-.asoterm-mosaic .drop-target-container.-dragging .drop-target {
+/* Sürükle-bırak bölgeleri (koyu temada görünür).
+   Bir bloğu taşırken: üzerine gelinen bloğun tüm bırakma bölgeleri ve kök kenar
+   şeritleri soluk-kesik çizgiyle belirir → kullanıcı nereye bırakacağını görür.
+   İmlecin tam üzerindeki bölge ayrıca belirgin biçimde vurgulanır. */
+.asoterm-mosaic .mosaic-window.drop-target-hover .drop-target-container .drop-target:not(.drop-target-hover),
+.asoterm-mosaic .drop-target-container.-dragging .drop-target:not(.drop-target-hover) {
   opacity: 1;
-  background: rgba(110, 168, 254, 0.1);
+  background: rgba(110, 168, 254, 0.12);
   border: 2px dashed rgba(110, 168, 254, 0.5);
   border-radius: var(--radius-sm);
 }
 .asoterm-mosaic .drop-target-container .drop-target.drop-target-hover {
+  opacity: 1;
   background: rgba(110, 168, 254, 0.3);
   border: 2px solid var(--accent);
+  border-radius: var(--radius-sm);
 }
 
 /* ============ Terminal ============ */

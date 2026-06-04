@@ -6,6 +6,8 @@ import { useStore } from '../store';
 export default function TileControls({ blockId }: { blockId: string }) {
   const { mosaicActions } = useContext(MosaicContext);
   const { mosaicWindowActions } = useContext(MosaicWindowContext);
+  const isMaximized = useStore((s) => s.maximized?.blockId === blockId);
+  const toggleMaximize = useStore((s) => s.toggleMaximize);
 
   const split = (direction: 'row' | 'column') => {
     const st = useStore.getState();
@@ -33,11 +35,11 @@ export default function TileControls({ blockId }: { blockId: string }) {
         ▤
       </button>
       <button
-        className="tile-btn"
-        title="Tam ekran / büyüt"
-        onClick={() => mosaicActions.expand(mosaicWindowActions.getPath(), 100)}
+        className={'tile-btn' + (isMaximized ? ' active' : '')}
+        title={isMaximized ? 'Eski boyuta döndür' : 'Büyüt'}
+        onClick={() => toggleMaximize(blockId)}
       >
-        ⤢
+        {isMaximized ? '⤡' : '⤢'}
       </button>
       <button
         className="tile-btn tile-close"
