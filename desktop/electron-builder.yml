@@ -36,9 +36,10 @@ win:
       to: asoterm-server.exe
 
 nsis:
-  oneClick: false
+  # Tek tık kurulum: ilk kurulum sihirbazsız, otomatik güncellemeler sessiz
+  # (electron-updater quitAndInstall(true) → arka planda kur, yeniden başlat).
+  oneClick: true
   perMachine: false
-  allowToChangeInstallationDirectory: true
   createDesktopShortcut: always
   createStartMenuShortcut: true
   shortcutName: AsoTerm
