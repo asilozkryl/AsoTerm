@@ -16,7 +16,13 @@ mkdirSync(dirname(out), { recursive: true });
 // (PATH'te zaten varsa — CI/setup-go — o kullanılır, sürüm çakışması olmaz).
 const env = { ...process.env };
 if (isWin) {
-  env.PATH = `${env.PATH};C:\\Program Files\\Go\\bin`;
+  // Windows'ta PATH değişkeni çoğunlukla 'Path' adıyla gelir. process.env'i
+  // düz nesneye kopyalayınca anahtarın büyük/küçük harfi korunur; bu yüzden
+  // 'PATH' diye AYRI bir anahtar eklemek setup-go'nun PATH'e eklediği Go'yu
+  // gölgeler ve child process'te "'go' is not recognized" hatasına yol açar.
+  // Çözüm: var olan anahtarı (case-insensitive) bulup onun üzerine ekle.
+  const pathKey = Object.keys(env).find((k) => k.toLowerCase() === 'path') ?? 'Path';
+  env[pathKey] = `${env[pathKey] ?? ''};C:\\Program Files\\Go\\bin`;
 }
 
 // Windows'ta GUI subsystem olarak derle ki Electron sidecar'ı başlatınca
