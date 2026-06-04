@@ -1,14 +1,20 @@
 import { useEffect, useState } from 'react';
 import { useSettings, ACCENT_PRESETS } from '../settings';
 import { shells as fetchShells, ShellInfo } from '../api/rest';
+import { checkForUpdatesManually } from '../update';
 
 export default function Settings({ onClose }: { onClose: () => void }) {
   const s = useSettings();
   const [shells, setShells] = useState<ShellInfo[]>([]);
+  const [version, setVersion] = useState('');
 
   useEffect(() => {
     fetchShells()
       .then(setShells)
+      .catch(() => {});
+    window.asoterm
+      .getVersion()
+      .then(setVersion)
       .catch(() => {});
   }, []);
 
@@ -102,6 +108,21 @@ export default function Settings({ onClose }: { onClose: () => void }) {
                 onChange={(e) => s.update('webHome', e.target.value)}
               />
             </div>
+          </section>
+
+          <section className="settings-sec">
+            <h4>Güncelleme</h4>
+            <div className="settings-row">
+              <label>Sürüm</label>
+              <span className="settings-value">AsoTerm {version || '—'}</span>
+            </div>
+            <div className="settings-row">
+              <label>Otomatik güncelleme</label>
+              <button className="btn btn-ghost" onClick={() => checkForUpdatesManually()}>
+                Güncellemeleri denetle
+              </button>
+            </div>
+            <div className="settings-note">Yeni sürüm bulunduğunda kurulmadan önce size sorulur.</div>
           </section>
         </div>
 

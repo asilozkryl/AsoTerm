@@ -1265,6 +1265,11 @@ body {
   font-size: 11.5px;
   font-style: italic;
 }
+.settings-value {
+  color: var(--text);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
 .swatches {
   display: flex;
   align-items: center;
