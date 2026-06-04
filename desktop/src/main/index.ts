@@ -187,7 +187,8 @@ ipcMain.handle('update:download', async (): Promise<{ ok: boolean; reason?: stri
   }
 });
 
-ipcMain.handle('update:install', (): void => autoUpdater.quitAndInstall());
+// Sessiz kur + otomatik yeniden başlat: kullanıcı sihirbazla uğraşmasın.
+ipcMain.handle('update:install', (): void => autoUpdater.quitAndInstall(true, true));
 
 app.whenReady().then(() => {
   startServer();
