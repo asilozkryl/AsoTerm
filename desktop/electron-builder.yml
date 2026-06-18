@@ -61,3 +61,16 @@ mac:
 
 dmg:
   artifactName: ${productName}-${version}-${arch}.${ext}
+
+# --- Linux ---
+linux:
+  category: Utility
+  target:
+    - AppImage
+    - deb
+  executableName: AsoTerm
+  artifactName: ${productName}-${version}-${arch}.${ext}
+  extraResources:
+    - from: resources/asoterm-server
+      to: asoterm-server
+

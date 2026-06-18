@@ -72,6 +72,7 @@ jobs:
           - os: windows-latest # Windows x64 -> NSIS .exe
           - os: macos-latest # Apple Silicon (arm64) -> .dmg / .zip
           - os: macos-13 # Intel (x64) -> .dmg / .zip
+          - os: ubuntu-latest # Linux -> .AppImage / .deb
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout
@@ -108,6 +109,8 @@ jobs:
             desktop/dist-installer/*.exe
             desktop/dist-installer/*.dmg
             desktop/dist-installer/*.zip
+            desktop/dist-installer/*.AppImage
+            desktop/dist-installer/*.deb
           if-no-files-found: ignore
 
       - name: Release'e yükle
@@ -121,6 +124,9 @@ jobs:
             desktop/dist-installer/*.exe
             desktop/dist-installer/*.dmg
             desktop/dist-installer/*.zip
+            desktop/dist-installer/*.AppImage
+            desktop/dist-installer/*.deb
             desktop/dist-installer/*.blockmap
             desktop/dist-installer/latest.yml
+            desktop/dist-installer/latest-linux.yml
           fail_on_unmatched_files: false
