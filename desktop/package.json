@@ -3,7 +3,11 @@
   "version": "2.3.0",
   "description": "AsoTerm — Wave tarzı blok tabanlı terminal ve dosya çalışma alanı",
   "main": "./out/main/index.js",
-  "author": "asilozkryl",
+  "author": {
+    "name": "asilozkryl",
+    "email": "asilozkryl@github.com"
+  },
+  "homepage": "https://github.com/asilozkryl/AsoTerm",
   "scripts": {
     "build:server": "node scripts/build-server.mjs",
     "dev": "npm run build:server && electron-vite dev",
