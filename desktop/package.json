@@ -1,6 +1,6 @@
 {
   "name": "asoterm",
-  "version": "2.2.3",
+  "version": "2.3.0",
   "description": "AsoTerm — Wave tarzı blok tabanlı terminal ve dosya çalışma alanı",
   "main": "./out/main/index.js",
   "author": "asilozkryl",
