@@ -52,7 +52,6 @@ mac:
     - dmg
     - zip
   artifactName: ${productName}-${version}-${arch}.${ext}
-  identity: null # kod imzalama yok (imzasız/ad-hoc derleme)
   # macOS'ta sidecar AsoTerm.app/Contents/Resources/asoterm-server olur
   # (main: process.platform !== win32 -> 'asoterm-server', uzantısız).
   extraResources:
