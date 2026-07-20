@@ -10,6 +10,8 @@ export default function EditorBlock({ path }: { path: string }) {
   const [dirty, setDirty] = useState(false);
   const valueRef = useRef('');
   const savedRef = useRef(''); // son kaydedilen/yüklenen içerik (dirty karşılaştırması)
+  const pathRef = useRef(path);
+  pathRef.current = path;
 
   useEffect(() => {
     let active = true;
@@ -29,12 +31,14 @@ export default function EditorBlock({ path }: { path: string }) {
   }, [path]);
 
   const save = async () => {
+    const p = pathRef.current;
     try {
-      await fs.write(path, valueRef.current);
+      await fs.write(p, valueRef.current);
       savedRef.current = valueRef.current;
+      setValue(valueRef.current); // controlled value ile model senkron kalsın
       setDirty(false);
       setStatus('kaydedildi ✓');
-      toast('Kaydedildi: ' + path);
+      toast('Kaydedildi: ' + p);
     } catch (e) {
       setStatus('kaydedilemedi');
       toast('Kaydedilemedi: ' + e, true);
@@ -42,7 +46,10 @@ export default function EditorBlock({ path }: { path: string }) {
   };
 
   const onMount: OnMount = (editor, monaco) => {
-    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, save);
+    // path/value ref üzerinden okunur → stale closure ile yanlış dosyaya yazılmaz.
+    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
+      void save();
+    });
   };
 
   return (
@@ -57,7 +64,7 @@ export default function EditorBlock({ path }: { path: string }) {
           </span>
         )}
         <span className="editor-status">{status}</span>
-        <button className="mini-btn" onClick={save}>
+        <button className="mini-btn" onClick={() => void save()}>
           Kaydet (Ctrl+S)
         </button>
       </div>
@@ -67,8 +74,10 @@ export default function EditorBlock({ path }: { path: string }) {
           language={monacoLanguage(path)}
           value={value}
           onChange={(v) => {
-            valueRef.current = v ?? '';
-            setDirty(valueRef.current !== savedRef.current);
+            const next = v ?? '';
+            valueRef.current = next;
+            setValue(next);
+            setDirty(next !== savedRef.current);
           }}
           onMount={onMount}
           options={{ fontSize: 13, minimap: { enabled: true }, automaticLayout: true }}

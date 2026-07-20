@@ -16,9 +16,9 @@ func (m *Manager) Copy(src, dstDir string) error {
 		return fmt.Errorf("kaynak bulunamadı: %w", err)
 	}
 	dst := filepath.Join(dstDir, filepath.Base(src))
-	// Hedef kaynağın kendisiyse (aynı klasöre kopyala→yapıştır) çakışmayan bir
-	// ad üret; üzerine yazmak yerine bir kopya (çoğalt) oluşturulsun.
-	if filepath.Clean(dst) == filepath.Clean(src) {
+	// Hedef zaten varsa (aynı klasöre çoğaltma veya isim çakışması) üzerine
+	// yazmak yerine çakışmayan bir ad üret — sessiz veri kaybını önler.
+	if _, err := os.Stat(dst); err == nil {
 		dst = uniqueName(dstDir, filepath.Base(src))
 	}
 	if info.IsDir() {
@@ -40,6 +40,9 @@ func (m *Manager) Move(src, dstDir string) error {
 	dst := filepath.Join(dstDir, filepath.Base(src))
 	if err := ensureDifferent(src, dst); err != nil {
 		return err
+	}
+	if _, err := os.Stat(dst); err == nil {
+		return fmt.Errorf("hedefde aynı adlı bir öğe zaten var")
 	}
 	if info.IsDir() && isSubPath(src, dstDir) {
 		return fmt.Errorf("klasör kendi alt dizinine taşınamaz")

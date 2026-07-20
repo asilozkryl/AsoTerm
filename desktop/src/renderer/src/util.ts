@@ -8,6 +8,8 @@ export function dirOf(path: string): string {
   const idx = Math.max(path.lastIndexOf('\\'), path.lastIndexOf('/'));
   if (idx < 0) return path;
   if (idx === 0) return path.slice(0, 1); // kök öğe: '/foo' -> '/'
+  // Windows sürücü kökü: 'C:\foo' -> 'C:\' ( 'C:' değil — aynı klasör DnD karşılaştırması bozulmasın)
+  if (idx === 2 && /^[A-Za-z]:/.test(path)) return path.slice(0, 3);
   return path.slice(0, idx);
 }
 

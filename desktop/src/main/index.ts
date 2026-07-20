@@ -25,8 +25,8 @@ function serverBinaryPath(): string {
 function startServer(): void {
   serverReady = new Promise<ServerInfo>((resolve, reject) => {
     const bin = serverBinaryPath();
-    // macOS/Linux: paketlemeden sonra çalıştırma izni kaybolabilir → garanti et.
-    if (!app.isPackaged && process.platform !== 'win32') {
+    // macOS/Linux: kaynak/paket kopyasında execute biti düşebilir → garanti et.
+    if (process.platform !== 'win32') {
       try {
         chmodSync(bin, 0o755);
       } catch {

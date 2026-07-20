@@ -73,28 +73,45 @@ func (h *Hub) handleWS(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (h *Hub) hasConn(c *wsConn) bool {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	_, ok := h.conns[c]
+	return ok
+}
+
 func (h *Hub) handleMsg(c *wsConn, msg wsMsg) {
 	switch msg.Type {
 	case "create":
 		id, err := h.term.Create(msg.Shell, msg.Cwd)
 		if err != nil {
-			c.send(wsMsg{Type: "error", ReqID: msg.ReqID, Error: err.Error()})
+			_ = c.send(wsMsg{Type: "error", ReqID: msg.ReqID, Error: err.Error()})
 			return
 		}
-		c.send(wsMsg{Type: "created", ReqID: msg.ReqID, ID: id})
+		_ = c.send(wsMsg{Type: "created", ReqID: msg.ReqID, ID: id})
 	case "create-ssh":
 		if msg.SSH == nil {
-			c.send(wsMsg{Type: "error", ReqID: msg.ReqID, Error: "ssh seçenekleri eksik"})
+			_ = c.send(wsMsg{Type: "error", ReqID: msg.ReqID, Error: "ssh seçenekleri eksik"})
 			return
 		}
 		// SSH dial bloklar → ayrı goroutine'de bağlan, sonucu asenkron bildir.
 		go func(reqID string, opts terminal.SSHOpts) {
 			id, err := h.term.CreateSSH(opts)
 			if err != nil {
-				c.send(wsMsg{Type: "error", ReqID: reqID, Error: err.Error()})
+				if h.hasConn(c) {
+					_ = c.send(wsMsg{Type: "error", ReqID: reqID, Error: err.Error()})
+				}
 				return
 			}
-			c.send(wsMsg{Type: "created", ReqID: reqID, ID: id})
+			// İstemci bağlantısı koptuysa (veya yanıt yazılamazsa) sahipsiz
+			// uzak oturumu kapat — yeniden bağlanınca stale PTY birikmesin.
+			if !h.hasConn(c) {
+				_ = h.term.Close(id)
+				return
+			}
+			if err := c.send(wsMsg{Type: "created", ReqID: reqID, ID: id}); err != nil {
+				_ = h.term.Close(id)
+			}
 		}(msg.ReqID, *msg.SSH)
 	case "input":
 		_ = h.term.Write(msg.ID, msg.Data)
@@ -127,8 +144,8 @@ func (h *Hub) broadcast(msg wsMsg) {
 	}
 }
 
-func (c *wsConn) send(msg wsMsg) {
+func (c *wsConn) send(msg wsMsg) error {
 	c.writeMu.Lock()
 	defer c.writeMu.Unlock()
-	_ = c.ws.WriteJSON(msg)
+	return c.ws.WriteJSON(msg)
 }
